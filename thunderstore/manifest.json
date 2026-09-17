@@ -1,0 +1,9 @@
+{
+  "name": "HostOwner",
+  "version_number": "0.0.0",
+  "website_url": "https://github.com/TBSjiga/HostOwner",
+  "description": "The hosting player takes ownership of chosen objects in its active area - stations, bosses, any prefab or component - so their logic and the host's mods run on the host.",
+  "dependencies": [
+    "denikson-BepInExPack_Valheim-5.4.2350"
+  ]
+}
