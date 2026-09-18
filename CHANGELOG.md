@@ -13,5 +13,8 @@
   `Components` и `Prefabs`. `Player` исключён всегда.
 - `HostOwnerApi` для других модов через рефлексию: `AddPrefab`,
   `AddComponent`, `IsOwnedKind`.
+- Уступать явным захватам: если пир забрал объект назад сразу после хоста
+  (`ClaimOwnership` с клиента — таунт, телега), объект оставляется в покое на
+  `YieldSeconds` (30 с).
 - Консоль `hostowner status | list | now`.
 - Бездействует на клиентах и выделенном сервере. Harmony-патчей нет.

@@ -14,6 +14,7 @@ namespace HostOwner
         private ConfigEntry<bool> _cfgEnabled;
         private ConfigEntry<bool> _cfgDebug;
         private ConfigEntry<float> _cfgInterval;
+        private ConfigEntry<float> _cfgYield;
 
         private ConfigEntry<bool> _cfgStations;
         private ConfigEntry<bool> _cfgBosses;
@@ -33,6 +34,9 @@ namespace HostOwner
             _cfgInterval = Config.Bind("01 General", "Interval", 2f,
                 new ConfigDescription("Seconds between two passes over the host's active area. Vanilla hands ownership out every 2 s.",
                     new AcceptableValueRange<float>(0.5f, 30f)));
+            _cfgYield = Config.Bind("01 General", "YieldSeconds", 30f,
+                new ConfigDescription("When a player's client takes an object back right after the host took it - a mod or the game claiming it on purpose, e.g. a taunt pulling a monster or a player using a cart - leave that object alone for this many seconds instead of fighting over it. 0: never yield.",
+                    new AcceptableValueRange<float>(0f, 600f)));
 
             _cfgStations = Config.Bind("02 Objects", "Stations", true,
                 "Every prefab with a Smelter (smelter, blast furnace, charcoal kiln, spinning wheel, windmill, eitr refinery), CookingStation (cooking stations, oven), Beehive, SapCollector or Fermenter component, from any mod too.");
@@ -72,6 +76,7 @@ namespace HostOwner
         private void BuildIndex(ZNetScene zs)
         {
             _wanted.Clear();
+            if (zs != _recordsScene) { ForgetWorld(); _recordsScene = zs; }
             _indexedScene = zs;
             if (zs.m_prefabs == null) return;
 

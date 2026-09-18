@@ -11,5 +11,8 @@
   the `Components` and `Prefabs` lists. `Player` is never taken.
 - `HostOwnerApi` for other mods via reflection: `AddPrefab`, `AddComponent`,
   `IsOwnedKind`.
+- Yields to explicit claims: when a player's client takes an object back right
+  after the host took it (`ClaimOwnership` from a mod or the game - a taunt, a
+  cart), the object is left alone for `YieldSeconds` (30 s).
 - Console: `hostowner status | list | now`.
 - Inert on clients and on a dedicated server. No Harmony patches.

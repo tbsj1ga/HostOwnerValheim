@@ -16,6 +16,9 @@ way when the host walks off.
   SapCollector or Fermenter component, mods included.
 - `Bosses` (off): every creature flagged as a boss.
 - `Components`, `Prefabs`: your own lists.
+- An object a player's client claims back right after the host took it (a
+  taunt mod, a cart) is left alone for `YieldSeconds`, so mods that claim
+  monsters on purpose keep working.
 
 Console: `hostowner status | list | now`. Config in
 `BepInEx/config/j1ga.hostowner.cfg`; changes apply without a restart.

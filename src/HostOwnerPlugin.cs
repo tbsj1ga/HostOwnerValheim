@@ -43,11 +43,23 @@ namespace HostOwner
         private readonly List<ZDO> _near = new List<ZDO>();
         private float _nextPass;
 
+        // Objects the host took: the last pass on which they were still the host's. When one
+        // of them is back with a peer on the very next pass, that peer's client claimed it on
+        // purpose (ZNetView.ClaimOwnership: a taunt mod pulling a monster, a player using a
+        // cart) - the game itself never hands an object away from an owner in range. Such an
+        // object is left alone for YieldSeconds instead of being fought over.
+        private readonly Dictionary<ZDOID, int> _held = new Dictionary<ZDOID, int>();
+        private readonly Dictionary<ZDOID, float> _yielded = new Dictionary<ZDOID, float>();
+        private readonly List<ZDOID> _expired = new List<ZDOID>();
+        private ZNetScene _recordsScene;
+
         // last pass and totals, for the console
         private int _lastWanted;
         private int _lastOwned;
         private int _lastClaimed;
+        private int _lastYielded;
         private int _claimedTotal;
+        private int _yieldedTotal;
         private int _passes;
 
         private int _errorCount;
@@ -138,7 +150,8 @@ namespace HostOwner
             man.FindSectorObjects(zone, new SimulationDistance(synced.NearSimulationDistance, 0, synced.IsClassic), _near, null);
 
             long me = ZDOMan.GetSessionID();
-            int wanted = 0, owned = 0, claimed = 0;
+            float now = Time.time;
+            int wanted = 0, owned = 0, claimed = 0, yielded = 0;
             foreach (ZDO zdo in _near)
             {
                 // non-persistent objects (players, projectiles) are owned by whoever made them
@@ -146,20 +159,67 @@ namespace HostOwner
                 string name;
                 if (!_wanted.TryGetValue(zdo.GetPrefab(), out name)) continue;
                 wanted++;
+                ZDOID id = zdo.m_uid;
                 long owner = zdo.GetOwner();
-                if (owner == me) { owned++; continue; }
+                if (owner == me)
+                {
+                    owned++;
+                    if (_held.ContainsKey(id)) _held[id] = _passes;
+                    continue;
+                }
+
+                float until;
+                if (_yielded.TryGetValue(id, out until))
+                {
+                    if (now < until) { yielded++; continue; }
+                    _yielded.Remove(id);
+                }
+
+                int lastHeld;
+                if (owner != 0L && _cfgYield.Value > 0f && _held.TryGetValue(id, out lastHeld) && lastHeld == _passes - 1)
+                {
+                    _yielded[id] = now + _cfgYield.Value;
+                    _held.Remove(id);
+                    yielded++;
+                    _yieldedTotal++;
+                    if (_cfgDebug.Value) Logger.LogInfo(name + " " + Pos(zdo.GetPosition()) + ": claimed back by " + PeerName(znet, owner) + ", left alone for " + F(_cfgYield.Value) + " s");
+                    continue;
+                }
+
                 if (!ZNetScene.InActiveArea(zdo.GetPosition(), zone)) continue;
                 zdo.SetOwner(me);
+                _held[id] = _passes;
                 claimed++;
                 if (_cfgDebug.Value) Logger.LogInfo(name + " " + Pos(zdo.GetPosition()) + ": taken from " + PeerName(znet, owner));
             }
             _near.Clear();
+            Prune(now);
 
             _lastWanted = wanted;
             _lastOwned = owned + claimed;
             _lastClaimed = claimed;
+            _lastYielded = yielded;
             _claimedTotal += claimed;
             _passes++;
+        }
+
+        // Records of objects not seen for a pass (left the area, destroyed) and yields that
+        // have run out.
+        private void Prune(float now)
+        {
+            _expired.Clear();
+            foreach (KeyValuePair<ZDOID, int> kv in _held) if (kv.Value < _passes - 1) _expired.Add(kv.Key);
+            foreach (ZDOID id in _expired) _held.Remove(id);
+            _expired.Clear();
+            foreach (KeyValuePair<ZDOID, float> kv in _yielded) if (now >= kv.Value) _expired.Add(kv.Key);
+            foreach (ZDOID id in _expired) _yielded.Remove(id);
+            _expired.Clear();
+        }
+
+        private void ForgetWorld()
+        {
+            _held.Clear();
+            _yielded.Clear();
         }
 
         // ------------------------------------------------------------------
