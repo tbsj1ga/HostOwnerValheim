@@ -1,95 +1,117 @@
 # HostOwner
 
-Мод для Valheim: хост забирает себе владение выбранными объектами в своей
-активной зоне — станциями, боссами, чем угодно по списку компонентов или
-префабов. Ставится только на хостящего игрока; на клиентах и выделенном
-сервере бездействует. Без Harmony-патчей.
+**English** · [Русский](README-RU.md)
 
-Это не библиотека: другим модам он не нужен как сборка. Он закрывает общую для
-них дыру — «логика объекта выполняется у того, кто им владеет, а владеет
-игрок без мода» — одним общим способом, чтобы не дублировать её в каждом
-(StationSpeed, BossMeter, AI-моды). У кого есть что добавить программно — есть
-крошечный статический API через рефлексию, см. ниже.
+A Valheim mod: the hosting player takes ownership of chosen objects in its active area —
+stations, bosses, anything by a list of components or prefabs. Installed on the hosting
+player only; inert on clients and on a dedicated server. No Harmony patches.
 
-Состояние и план — в `ROADMAP.md`, история версий — в `CHANGELOG.md`.
+It is not a library: other mods do not need it as an assembly. It closes a gap they all
+share — "an object's logic runs on whoever owns it, and the owner is a player without the
+mod" — in one common way, so it does not have to be duplicated in each of them
+(StationSpeed, ExtendedBosses, BossMeter, AI mods). For mods that want to add kinds from
+code there is a tiny static API through reflection, see below.
 
-## Зачем
+Status and plans are in `ROADMAP.md`, version history in `CHANGELOG.md`.
 
-У каждого сетевого объекта один владелец — клиент, который исполняет его
-логику и пишет результат в ZDO. Плавильню тикает владелец, босс ходит и бьёт
-на владельце, бочка принимает закладку на владельце. Любой мод, который меняет
-поведение объекта на клиенте, действует ровно тогда, когда этот клиент —
-владелец.
+## Why
 
-С Valheim 1.0 владение раздаёт **сервер** (`ZDOMan.ReleaseZDOS`, раз в 2 с):
-сначала себе — за то, что в его собственной активной зоне, потом каждому пиру
-по очереди — за то, что в его; и только объектам без владельца или тем, чей
-владелец из своей зоны ушёл. Кто получил объект, держит его, пока не отойдёт.
-Клиенты сами владение не берут.
+Every networked object has one owner — the client that runs its logic and writes the
+result into the ZDO. The owner ticks a smelter, a boss walks and strikes on its owner, a
+fermenter accepts a load on its owner. Any mod that changes an object's behaviour on the
+client takes effect exactly when that client is the owner.
 
-Отсюда дыра: если Дарк без мода пришёл к печи первым, печь его, и ускорение
-хоста на неё не действует, пока Дарк рядом; если он один бьёт босса — ударов
-никто из модовых не видит.
+Since Valheim 1.0 ownership is handed out by the **server** (`ZDOMan.ReleaseZDOS`, every
+2 s): first to itself — for what is in its own active area, then to each peer in turn —
+for what is in theirs; and only objects without an owner or whose owner has left their
+area. Whoever got an object keeps it until they walk away. Clients never take ownership
+themselves.
 
-## Как работает
+Hence the gap: if a guest without the mod reaches a smelter first, the smelter is theirs,
+and the host's speed-up does not apply to it while the guest is near; if they fight a
+boss alone, none of the modded players see the hits.
 
-Раз в `Interval` секунд (2, как у игры) на хосте:
+## How it works
 
-1. Берётся ближняя область симуляции вокруг хоста — те же сектора, что игра
-   перебирает для него самого в `ReleaseNearbyZDOS` (`ZDOMan.FindSectorObjects`
-   с `NearSimulationDistance`).
-2. Для каждого объекта из списка видов (по хешу префаба), персистентного и
-   внутри активной зоны (`ZNetScene.InActiveArea`), с чужим владельцем —
-   `ZDO.SetOwner(сессия хоста)`. Ревизия владельца растёт, пир получает её со
-   следующей посылкой и перестаёт симулировать; хост начинает.
-3. Ваниль объект назад не отдаст, пока хост в зоне: владелец «в своей области».
-   Когда хост уходит, срабатывает его же ванильный release (`SetOwner(0)`), и
-   объект достаётся, кому положено.
-4. Если взятый объект на следующем же проходе снова у того же пира — это не
-   раздача (игра не отдаёт объект от владельца в зоне), а сознательный
-   `ZNetView.ClaimOwnership` с его клиента: таунт-мод тянет моба, игрок взялся
-   за телегу. Такой объект хост оставляет в покое на `YieldSeconds` (30 с) и
-   не борется за него; потом берёт снова, и если его опять заберут — снова
-   уступает. Так HostOwner уживается с ShieldTaunt при `Bosses=true` и с
-   любыми ванильными захватами.
+Every `Interval` seconds (2, like the game) on the host:
 
-Непересистентные объекты (игроки, снаряды) не трогаются, как и в ванильном
-раздатчике; префабы с компонентом `Player` исключены всегда.
+1. Take the near simulation area around the host — the same sectors the game walks for
+   the host itself in `ReleaseNearbyZDOS` (`ZDOMan.FindSectorObjects` with
+   `NearSimulationDistance`).
+2. For every object of a listed kind (by prefab hash), persistent and inside the active
+   area (`ZNetScene.InActiveArea`), owned by someone else — `ZDO.SetOwner(host session)`.
+   The owner revision grows, the peer receives it with the next packet and stops
+   simulating; the host starts.
+3. Vanilla will not give the object back while the host is in the area: the owner is "in
+   its own area". When the host walks away, its own vanilla release (`SetOwner(0)`) fires
+   and the object goes to whoever should get it.
+4. If a taken object is back with the same peer on the very next pass, that is not the
+   hand-out (the game never takes an object from an owner in its area) but a deliberate
+   `ZNetView.ClaimOwnership` from their client: a taunt pulls a monster, a player grabs a
+   cart. The host leaves such an object alone for `YieldSeconds` (30 s) and does not fight
+   over it; then takes it again, and if it is claimed back again — yields again. That is
+   how HostOwner gets along with the WeaponArts taunt with `Bosses=true`, and with any
+   vanilla claim.
 
-**Границы.** Только активная зона хоста (±NearSimulationDistance зон, по
-умолчанию ±2, ~130–190 м); далёкую печь Дарка хост не подхватит — её и
-симулирует только тот, кто рядом. На краю зоны объект может «мигать» между
-хостом и гостем, как между любыми двумя игроками в ванилле. Выделенный сервер
-не имеет игрока и активной зоны — там мод ничего не делает; на клиенте тоже.
+Non-persistent objects (players, projectiles) are not touched, just as by the vanilla
+hand-out; prefabs with a `Player` component are always excluded.
 
-## Установка
+**Limits.** Only the host's active area (±NearSimulationDistance zones, ±2 by default,
+~130–190 m); a guest's far-away smelter is not picked up — only whoever is near simulates
+it anyway. At the edge of the area an object may flip between the host and a guest, as
+between any two players in vanilla. A dedicated server has no player and no active area —
+the mod does nothing there; nor on a client.
 
-`build/HostOwner.dll` → `%AppData%\r2modmanPlus-local\Valheim\profiles\Valheim\BepInEx\plugins\HostOwner\`
-или `build.ps1 -Install`. Только на хосте.
+## Compatibility
 
-## Настройки
+Tested with **Valheim 1.0.16** (network version 40), **BepInEx 5.4.23.5** (BepInExPack_Valheim 5.4.2351).
 
-`BepInEx\config\j1ga.hostowner.cfg`. Список видов пересобирается при любой
-правке без перезахода.
+## Who needs it
 
-| Раздел | Ключ | По умолчанию | Смысл |
+| Who | What |
+|---|---|
+| Hosting player (game started with "Start server") | installs the mod — objects of the chosen kinds in its area move to it |
+| Dedicated server | **does not work**: a server has no player and no active area, the mod stays inert |
+| Other players | not needed; with the mod or without, everything works as usual |
+
+## Known conflicts
+
+- Mods that manage object ownership themselves (hand it out or keep it) will argue with the
+  host. Mods that claim an object once (a taunt, a cart) get along: the host yields for
+  `YieldSeconds`.
+
+## Bugs and feedback
+
+GitHub Issues: https://github.com/tbsj1ga/HostOwnerValheim/issues — please attach `BepInEx/LogOutput.log`.
+
+## Installation
+
+Through r2modman / Thunderstore, or put `build/HostOwner.dll` into
+`BepInEx\plugins\HostOwner\` (or `build.ps1 -Install`). Host only.
+
+## Settings
+
+`BepInEx\config\j1ga.hostowner.cfg`. The list of kinds is rebuilt on any edit, without a
+rejoin.
+
+| Section | Key | Default | Meaning |
 |---|---|---|---|
-| General | `Enabled` | `true` | выключатель; уже взятое остаётся у хоста, пока он не отойдёт |
-| General | `Debug` | `false` | лог каждого забранного объекта с координатами и прежним владельцем |
-| General | `Interval` | `2` | секунд между проходами (0.5…30) |
-| General | `YieldSeconds` | `30` | на сколько оставить в покое объект, который клиент забрал назад сразу после хоста (0 — никогда не уступать) |
-| Objects | `Stations` | `true` | всё с `Smelter`, `CookingStation`, `Beehive`, `SapCollector`, `Fermenter` — плавильни всех видов, жаровни, печь, ульи, смолосборники, бочки; модовые тоже |
-| Objects | `Bosses` | `false` | все существа с `Character.m_boss` |
-| Objects | `Components` | пусто | имена типов компонентов игры через запятую: `Plant,Fireplace,Tameable` |
-| Objects | `Prefabs` | пусто | имена префабов через запятую: `piece_bathtub,Eikthyr` |
+| General | `Enabled` | `true` | master switch; what was already taken stays with the host until it walks away |
+| General | `Debug` | `false` | log every object taken, with coordinates and the previous owner |
+| General | `Interval` | `2` | seconds between passes (0.5…30) |
+| General | `YieldSeconds` | `30` | how long to leave alone an object a client took back right after the host (0 — never yield) |
+| Objects | `Stations` | `true` | everything with `Smelter`, `CookingStation`, `Beehive`, `SapCollector`, `Fermenter` — every kind of smelter, cooking stations, the oven, beehives, sap extractors, fermenters; modded ones too |
+| Objects | `Bosses` | `false` | every creature with `Character.m_boss` |
+| Objects | `Components` | empty | the game's component type names, comma-separated: `Plant,Fireplace,Tameable` |
+| Objects | `Prefabs` | empty | prefab names, comma-separated: `piece_bathtub,Eikthyr` |
 
-Консоль (F5): `hostowner status` — сколько видов, сколько таких объектов в
-зоне, сколько у хоста, сколько забрано, скольким уступили; `hostowner list` — виды; `hostowner
-now` — проход сейчас.
+Console (F5): `hostowner status` — how many kinds, how many such objects in the area, how
+many the host owns, how many were taken, how many it yielded; `hostowner list` — the
+kinds; `hostowner now` — run a pass now.
 
-## API для других модов
+## API for other mods
 
-Без ссылки на сборку, через рефлексию; если мода нет — ничего не делать:
+No reference to the assembly, through reflection; if the mod is absent, do nothing:
 
 ```csharp
 Type api = Type.GetType("HostOwner.HostOwnerApi, HostOwner");
@@ -101,42 +123,42 @@ if (api != null)
 }
 ```
 
-`AddPrefab` / `AddComponent` — добавить вид к списку из конфига (действует до
-перезапуска игры, список пересобирается на следующем проходе); `IsOwnedKind` —
-забирает ли хост объекты такого префаба в этом мире.
+`AddPrefab` / `AddComponent` — add a kind to the list from the config (lasts until the game
+restarts, the list is rebuilt on the next pass); `IsOwnedKind` — whether the host takes
+objects of this prefab in this world.
 
-## Где что лежит
+## Where things are
 
-| Файл | Что в нём |
+| File | Contents |
 |---|---|
-| `src\HostOwnerPlugin.cs` | `Awake`/`Update`, проход `Pass`, помощники, обработка ошибок |
-| `src\HostOwnerPlugin.Config.cs` | `ConfigEntry`, сборка списка видов `BuildIndex` |
-| `src\HostOwnerPlugin.Api.cs` | `HostOwnerApi` для других модов |
-| `src\HostOwnerPlugin.Commands.cs` | консольная команда `hostowner` |
-| `build\HostOwner.dll` | сборка |
-| `thunderstore\` | manifest, icon 256×256, README для пакета |
+| `src\HostOwnerPlugin.cs` | `Awake`/`Update`, the `Pass`, helpers, error handling |
+| `src\HostOwnerPlugin.Config.cs` | `ConfigEntry`, building the list of kinds `BuildIndex` |
+| `src\HostOwnerPlugin.Api.cs` | `HostOwnerApi` for other mods |
+| `src\HostOwnerPlugin.Commands.cs` | the `hostowner` console command |
+| `build\HostOwner.dll` | build output |
+| `thunderstore\` | manifest, icon 256×256, package README → `build\HostOwner-<version>.zip` |
 
-## Сборка
+## Building
 
 ```
-powershell -ExecutionPolicy Bypass -File .\build.ps1            # собрать и проверить ссылки
-powershell -ExecutionPolicy Bypass -File .\build.ps1 -Install   # ... и положить в plugins
-powershell -ExecutionPolicy Bypass -File .\build.ps1 -Package   # ... и собрать zip для Thunderstore
+powershell -ExecutionPolicy Bypass -File .\build.ps1            # build and check references
+powershell -ExecutionPolicy Bypass -File .\build.ps1 -Install   # ... and copy into plugins
+powershell -ExecutionPolicy Bypass -File .\build.ps1 -Package   # ... and make the Thunderstore zip
 ```
 
-Компилятор — `csc.exe` из .NET Framework (C# 5), ссылки — из папки игры и
-`BepInEx\core` профиля r2modman; пути в начале `build.ps1`, `check-refs.ps1` и
-`src\HostOwner.csproj`. `check-refs.ps1` после сборки сверяет с игрой каждую
-ссылку на тип и член. Устройство то же, что у StationSpeed.
+The compiler is `csc.exe` from the .NET Framework (C# 5); references come from the game
+folder and the r2modman profile's `BepInEx\core`; the paths are at the top of
+`build.ps1`, `check-refs.ps1` and `src\HostOwner.csproj`. After the build `check-refs.ps1`
+checks every type and member reference against the game.
 
-## Репозиторий
+## Repository
 
-Локальный git-репозиторий, ветка `main`. Под версионированием: исходники,
-`.csproj`, скрипты, документация, заготовка Thunderstore и `build\HostOwner.dll`.
+Branch `main` on GitHub: https://github.com/tbsj1ga/HostOwnerValheim. Versioned: sources,
+`.csproj`, scripts, documentation, the Thunderstore template and `build\HostOwner.dll`.
+License: MIT (`LICENSE`).
 
 ## AI assistance
 
-This mod was developed with the help of an AI assistant (Claude by Anthropic).
-The code and the documentation were written together with it and checked
-against the game's IL; the design decisions, in-game testing and releases are
-the author's.
+This mod was developed with the help of an AI assistant (Claude by Anthropic). The code
+and the documentation were written together with it and checked against the game's IL;
+the design decisions, in-game testing and releases are the author's.

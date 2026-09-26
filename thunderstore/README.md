@@ -27,7 +27,28 @@ Host only: inert on clients and on a dedicated server (no player, no active
 area). No Harmony patches. A small reflection API (`HostOwner.HostOwnerApi`)
 lets other mods add kinds without referencing this assembly.
 
-Source, issues: https://github.com/TBSjiga/HostOwner
+## Compatibility
+
+Tested with **Valheim 1.0.16** (network version 40), **BepInEx 5.4.23.5** (BepInExPack_Valheim 5.4.2351).
+
+## Who needs it
+
+| Who | What |
+|---|---|
+| Hosting player (game started with "Start server") | installs the mod — objects of the chosen kinds in its area move to it |
+| Dedicated server | **does not work**: a server has no player and no active area, the mod stays inert |
+| Other players | not needed; with the mod or without, everything works as usual |
+
+## Known conflicts
+
+- Mods that manage object ownership themselves will argue with the host. Mods that claim an
+  object once (a taunt, a cart) get along: the host yields for `YieldSeconds`.
+
+## Bugs and feedback
+
+GitHub Issues: https://github.com/tbsj1ga/HostOwnerValheim/issues — please attach `BepInEx/LogOutput.log`.
+
+Source, documentation and the changelog: https://github.com/tbsj1ga/HostOwnerValheim
 
 *Developed with the help of an AI assistant (Claude by Anthropic); the design
 decisions, verification against the game code and in-game testing are the
