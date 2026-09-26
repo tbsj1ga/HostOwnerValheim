@@ -62,6 +62,12 @@ it anyway. At the edge of the area an object may flip between the host and a gue
 between any two players in vanilla. A dedicated server has no player and no active area —
 the mod does nothing there; nor on a client.
 
+## Screenshots
+
+![hostowner status: how many objects the host owns and took over](https://raw.githubusercontent.com/tbsj1ga/HostOwnerValheim/main/docs/media/status.png)
+
+*`hostowner status`: how many objects the host owns and took over*
+
 ## Compatibility
 
 Tested with **Valheim 1.0.16** (network version 40), **BepInEx 5.4.23.5** (BepInExPack_Valheim 5.4.2351).
@@ -156,6 +162,15 @@ checks every type and member reference against the game.
 Branch `main` on GitHub: https://github.com/tbsj1ga/HostOwnerValheim. Versioned: sources,
 `.csproj`, scripts, documentation, the Thunderstore template and `build\HostOwner.dll`.
 License: MIT (`LICENSE`).
+
+## More mods by j1gA
+
+| | Mod |
+|---|---|
+| [![LivingMap](https://raw.githubusercontent.com/tbsj1ga/LivingMapValheim/main/docs/media/icon-128.png)](https://thunderstore.io/c/valheim/p/j1gA/LivingMap/) | **[LivingMap](https://thunderstore.io/c/valheim/p/j1gA/LivingMap/)** — Your buildings, roads and cleared forest on the map and the minimap. |
+| [![StationSpeed](https://raw.githubusercontent.com/tbsj1ga/StationSpeedValheim/main/docs/media/icon-128.png)](https://thunderstore.io/c/valheim/p/j1gA/StationSpeed/) | **[StationSpeed](https://thunderstore.io/c/valheim/p/j1gA/StationSpeed/)** — Faster smelters, kilns, fermenters and crops — consistent even for players without the mod. |
+| [![WeaponArts](https://raw.githubusercontent.com/tbsj1ga/WeaponArtsValheim/main/docs/media/icon-128.png)](https://thunderstore.io/c/valheim/p/j1gA/WeaponArts/) | **[WeaponArts](https://thunderstore.io/c/valheim/p/j1gA/WeaponArts/)** — One key, one active ability per weapon: stagger, taunt, heals, berserk, crits. |
+| [![ExtendedBosses](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/icon-128.png)](https://thunderstore.io/c/valheim/p/j1gA/ExtendedBosses/) | **[ExtendedBosses](https://thunderstore.io/c/valheim/p/j1gA/ExtendedBosses/)** — Raid-style boss fights: phases, adds, nests, shields, marks — built from vanilla parts. |
 
 ## AI assistance
 
