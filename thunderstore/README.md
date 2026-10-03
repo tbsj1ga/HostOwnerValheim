@@ -19,10 +19,13 @@ way when the host walks off.
 - `Stations` (on): everything with a Smelter, CookingStation, Beehive,
   SapCollector or Fermenter component, mods included.
 - `Bosses` (off): every creature flagged as a boss.
+- `Chests` (off): every placed chest, for mods that take items from chests
+  through their owner (e.g. Runic Crafting 1.x with a player without the mod).
 - `Components`, `Prefabs`: your own lists.
 - An object a player's client claims back right after the host took it (a
   taunt mod, a cart) is left alone for `YieldSeconds`, so mods that claim
   monsters on purpose keep working.
+- An object someone has open (a chest being looked into) is never taken.
 
 Console: `hostowner status | list | now`. Config in
 `BepInEx/config/j1ga.hostowner.cfg`; changes apply without a restart.

@@ -4,6 +4,17 @@
 
 The version is set in one place — `HostOwnerPlugin.Version` in `src/HostOwnerPlugin.cs`.
 
+## 0.2.0 — Chests
+
+- New group `Chests` (off by default): every placed chest — a building piece with a
+  `Container`, not carts, ships or graves. For mods that take items from chests through
+  their owner: Runic Crafting 1.x asks the owner to hand a chest over, and a player
+  without the mod never answers, so crafting from the chests near them got stuck. With
+  `Chests` on, the chests in the host's area are the host's.
+- An object someone has open (`inUse` in its ZDO) is never taken, so a player looking
+  into a chest does not lose what they put in or took out.
+- `hostowner status` also shows how many objects were left alone because they are open.
+
 ## 0.1.0
 
 - First release. Every `Interval` seconds (2) the hosting player walks its near

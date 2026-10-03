@@ -31,7 +31,7 @@ namespace HostOwner
     {
         public const string Guid = "j1ga.hostowner";
         public const string Name = "Host Owner";
-        public const string Version = "0.1.0";
+        public const string Version = "0.2.0";
 
         public static HostOwnerPlugin Instance;
 
@@ -58,6 +58,7 @@ namespace HostOwner
         private int _lastOwned;
         private int _lastClaimed;
         private int _lastYielded;
+        private int _lastInUse;
         private int _claimedTotal;
         private int _yieldedTotal;
         private int _passes;
@@ -151,7 +152,7 @@ namespace HostOwner
 
             long me = ZDOMan.GetSessionID();
             float now = Time.time;
-            int wanted = 0, owned = 0, claimed = 0, yielded = 0;
+            int wanted = 0, owned = 0, claimed = 0, yielded = 0, inUse = 0;
             foreach (ZDO zdo in _near)
             {
                 // non-persistent objects (players, projectiles) are owned by whoever made them
@@ -187,6 +188,9 @@ namespace HostOwner
                 }
 
                 if (!ZNetScene.InActiveArea(zdo.GetPosition(), zone)) continue;
+                // someone has it open (a chest): its contents are being changed on their client,
+                // and taking it now would drop those changes
+                if (zdo.GetInt(ZDOVars.s_inUse) != 0) { inUse++; continue; }
                 zdo.SetOwner(me);
                 _held[id] = _passes;
                 claimed++;
@@ -199,6 +203,7 @@ namespace HostOwner
             _lastOwned = owned + claimed;
             _lastClaimed = claimed;
             _lastYielded = yielded;
+            _lastInUse = inUse;
             _claimedTotal += claimed;
             _passes++;
         }

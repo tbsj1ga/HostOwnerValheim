@@ -58,7 +58,8 @@ namespace HostOwner
             StringBuilder sb = new StringBuilder();
             sb.Append(_wanted.Count).Append(" kinds; last pass: ").Append(_lastWanted).Append(" such objects in the active area, ")
               .Append(_lastOwned).Append(" owned by the host, ").Append(_lastClaimed).Append(" taken just now, ")
-              .Append(_lastYielded).Append(" left to a player who claimed them back; ")
+              .Append(_lastYielded).Append(" left to a player who claimed them back, ")
+              .Append(_lastInUse).Append(" left while open; ")
               .Append(_claimedTotal).Append(" taken and ").Append(_yieldedTotal).Append(" yielded in ").Append(_passes).Append(" passes, every ").Append(F(_cfgInterval.Value)).Append(" s.");
             return sb.ToString();
         }

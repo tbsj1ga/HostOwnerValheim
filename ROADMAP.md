@@ -24,6 +24,8 @@ Current version: **0.1.0** — built and checked by `check-refs.ps1`.
       `YieldSeconds`. `ZDOID → pass` records live two passes, so a return after the host
       left the area does not count as a claim.
 - [x] Console `hostowner status | list | now`.
+- [x] 0.2.0: the `Chests` group (placed chests: `Container` + `Piece`, no `Vagon` / `Ship` /
+      `TombStone`, no `m_wagon`); an object whose ZDO has `inUse` set is never taken.
 - [x] Inert on clients (`!IsServer`) and on a dedicated server (`IsDedicated`, no
       `Player.m_localPlayer`).
 

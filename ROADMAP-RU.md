@@ -28,6 +28,9 @@
       оставляется в покое на `YieldSeconds`. Записи `ZDOID → проход` живут два
       прохода, чтобы возврат после ухода хоста из зоны не считался захватом.
 - [x] Консоль `hostowner status | list | now`.
+- [x] 0.2.0: группа `Chests` (построенные сундуки: `Container` + `Piece`, без
+      `Vagon` / `Ship` / `TombStone`, без `m_wagon`); объект с `inUse` в ZDO не
+      забирается никогда.
 - [x] Бездействие на клиентах (`!IsServer`) и выделенном сервере
       (`IsDedicated`, нет `Player.m_localPlayer`).
 

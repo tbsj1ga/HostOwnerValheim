@@ -52,6 +52,10 @@ Every `Interval` seconds (2, like the game) on the host:
    over it; then takes it again, and if it is claimed back again — yields again. That is
    how HostOwner gets along with the WeaponArts taunt with `Bosses=true`, and with any
    vanilla claim.
+5. An object someone has open (its ZDO's `inUse` is set — a chest being looked into) is
+   never taken: its contents are being changed on their client, and taking it would drop
+   those changes. Opening a chest also hands it to the player who opens it, which counts
+   as a claim, so it is left alone for `YieldSeconds` first and while it stays open after.
 
 Non-persistent objects (players, projectiles) are not touched, just as by the vanilla
 hand-out; prefabs with a `Player` component are always excluded.
@@ -108,6 +112,7 @@ rejoin.
 | General | `YieldSeconds` | `30` | how long to leave alone an object a client took back right after the host (0 — never yield) |
 | Objects | `Stations` | `true` | everything with `Smelter`, `CookingStation`, `Beehive`, `SapCollector`, `Fermenter` — every kind of smelter, cooking stations, the oven, beehives, sap extractors, fermenters; modded ones too |
 | Objects | `Bosses` | `false` | every creature with `Character.m_boss` |
+| Objects | `Chests` | `false` | every placed chest: a building piece with a `Container`, not carts, ships or graves. For mods that take items from chests through their owner — e.g. Runic Crafting 1.x asks the owner to hand a chest over, and a player without the mod never answers |
 | Objects | `Components` | empty | the game's component type names, comma-separated: `Plant,Fireplace,Tameable` |
 | Objects | `Prefabs` | empty | prefab names, comma-separated: `piece_bathtub,Eikthyr` |
 

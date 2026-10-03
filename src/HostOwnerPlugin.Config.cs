@@ -18,6 +18,7 @@ namespace HostOwner
 
         private ConfigEntry<bool> _cfgStations;
         private ConfigEntry<bool> _cfgBosses;
+        private ConfigEntry<bool> _cfgChests;
         private ConfigEntry<string> _cfgComponents;
         private ConfigEntry<string> _cfgPrefabs;
 
@@ -42,6 +43,8 @@ namespace HostOwner
                 "Every prefab with a Smelter (smelter, blast furnace, charcoal kiln, spinning wheel, windmill, eitr refinery), CookingStation (cooking stations, oven), Beehive, SapCollector or Fermenter component, from any mod too.");
             _cfgBosses = Config.Bind("02 Objects", "Bosses", false,
                 "Every creature flagged as a boss (Character.m_boss). Its AI then runs on the host, and mods that read the boss on its owner see every hit.");
+            _cfgChests = Config.Bind("02 Objects", "Chests", false,
+                "Every placed chest (a building piece with a Container; not carts, ships or graves). For mods that take items from chests through their owner, e.g. Runic Crafting 1.x, which asks the owner to hand a chest over and gets no answer from a player without the mod. A chest someone has open is never taken.");
             _cfgComponents = Config.Bind("02 Objects", "Components", "",
                 "Component type names from the game, comma separated: every prefab carrying one of them is taken over. Example: Plant,Fireplace,Tameable. Unknown names are reported in the log once.");
             _cfgPrefabs = Config.Bind("02 Objects", "Prefabs", "",
@@ -103,6 +106,7 @@ namespace HostOwner
                         if (go.GetComponent(t) != null) { want = true; break; }
                     }
                 }
+                if (!want && _cfgChests.Value) want = IsPlacedChest(go);
                 if (!want && _cfgBosses.Value)
                 {
                     Character c = go.GetComponent<Character>();
@@ -117,6 +121,14 @@ namespace HostOwner
             }
 
             Logger.LogInfo(_wanted.Count + " kinds of objects to own on the host: " + KindList(12));
+        }
+
+        // a chest built with the hammer: not a cart's or a ship's hold, not a grave
+        private static bool IsPlacedChest(GameObject go)
+        {
+            Container c = go.GetComponent<Container>();
+            if (c == null || c.m_wagon != null || go.GetComponent<Piece>() == null) return false;
+            return go.GetComponent<Vagon>() == null && go.GetComponentInChildren<Ship>() == null && go.GetComponent<TombStone>() == null;
         }
 
         private string KindList(int max)
